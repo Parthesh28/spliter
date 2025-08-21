@@ -4,13 +4,17 @@ use anchor_lang::prelude::*;
 pub enum SplitError {
     #[msg("Split does not exist")]
     SplitNotFound,
+    #[msg("Arithmetic overflow on received amount")]
+    Overflow,
     #[msg("Split target not yet reached")]
     TargetNotReached,
+    #[msg("Bump is missing")]
+    MissingBump,
     #[msg("Contributors do not match")]
     ContributorCountMismatch,
     #[msg("Contributor account is invalid")]
     InvalidContributorAccount,
-     #[msg("Unauthorized: Only split authority can perform this action")]
+    #[msg("Unauthorized: Only split authority can perform this action")]
     Unauthorized,
     #[msg("Invalid receiver account")]
     InvalidReceiver,
@@ -29,5 +33,5 @@ pub enum SplitError {
     #[msg("Duplicate contributor found")]
     DuplicateContributor,
     #[msg("Contributor percentage cannot be zero")]
-    ZeroPercentage
+    ZeroPercentage,
 }

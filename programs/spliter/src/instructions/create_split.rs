@@ -1,47 +1,55 @@
 use anchor_lang::prelude::*;
-use crate::{errors::SplitError, states::*};
+use crate::errors::*;
+use crate::states::*;
 
 pub fn create_split(
-    ctx: Context<InitializeSplit>, 
-    reciever: Pubkey, 
-    total_amount: u64, 
-    contributors: Vec<Spliter>
+    ctx: Context<InitializeSplit>,
+    reciever: Pubkey,
+    total_amount: u64,
+    mut contributors: Vec<Spliter>, 
 ) -> Result<()> {
     let split = &mut ctx.accounts.split;
-    
+
     require!(!contributors.is_empty(), SplitError::NoContributors);
-    
+
     let total_percent: u32 = contributors.iter().map(|c| c.percent as u32).sum();
     require!(total_percent == 100, SplitError::InvalidTotalPercentage);
-    
-    for (i, contributor) in contributors.iter().enumerate() {
-        for (j, other) in contributors.iter().enumerate() {
-            if i != j && contributor.contributor == other.contributor {
+
+    for (i, a) in contributors.iter().enumerate() {
+        for (j, b) in contributors.iter().enumerate() {
+            if i != j && a.contributor == b.contributor {
                 return Err(SplitError::DuplicateContributor.into());
             }
         }
     }
-    
-    for contributor in &contributors {
-        require!(contributor.percent > 0, SplitError::ZeroPercentage);
+
+    for c in &mut contributors {    
+        require!(c.percent > 0, SplitError::ZeroPercentage);
+        c.has_cleared = false;
+        c.cleared_at = 0;
     }
-    
+
     split.reciever = reciever;
     split.split_amount = total_amount;
     split.recieved_amount = 0;
-    split.contributors = contributors;
+    split.is_released = false;
+    split.released_at = 0;
     split.split_authority = ctx.accounts.split_authority.key();
-    
+    split.bump = ctx.bumps.split;
+
+    split.contributors = contributors;  
+
     emit!(CreateSplitEvent {
         split: split.key(),
         authority: split.split_authority,
-        reciever: reciever,
-        total_amount: total_amount,
+        reciever,
+        total_amount,
         contributor_count: split.contributors.len() as u8,
     });
-    
+
     Ok(())
 }
+
 
 #[derive(Accounts)]
 #[instruction(reciever: Pubkey, total_amount: u64, contributors: Vec<Spliter>)]
@@ -51,7 +59,7 @@ pub struct InitializeSplit<'info> {
     
     #[account(
         init,
-        space = 8 + Split::INIT_SPACE + (4 + (32 + 1 + 1) * contributors.len()),
+        space = 8 + Split::INIT_SPACE + (4 + (32 + 1 + 1 + 8) * contributors.len()),
         payer = split_authority,
         seeds = [SPLIT_SEED.as_bytes(), split_authority.key().as_ref()],
         bump

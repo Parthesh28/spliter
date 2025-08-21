@@ -1,5 +1,6 @@
 use anchor_lang::prelude::*;
-use crate::{errors::SplitError, states::*};
+use crate::errors::*;
+use crate::states::*;
 
 pub fn contribute(ctx: Context<Contribute>) -> Result<()> {
     let split = &mut ctx.accounts.split;
@@ -27,17 +28,21 @@ pub fn contribute(ctx: Context<Contribute>) -> Result<()> {
         },
     );
     anchor_lang::system_program::transfer(cpi_context, owed_amount)?;
-
+    
     split.contributors[index].has_cleared = true;
+    split.contributors[index].cleared_at = Clock::get()?.unix_timestamp;
+
     split.recieved_amount = split.recieved_amount
         .checked_add(owed_amount)
-        .ok_or(SplitError::TargetNotReached)?;
+        .ok_or(SplitError::Overflow)?;
 
     emit!(ContributeEvent {
         split: split.key(),
         contributor: contributor_key,
         amount: owed_amount,
         total_received: split.recieved_amount,
+        has_cleared: true,
+        cleared_at: split.contributors[index].cleared_at,
     });
 
     Ok(())
@@ -60,4 +65,6 @@ pub struct ContributeEvent {
     pub contributor: Pubkey,
     pub amount: u64,
     pub total_received: u64,
+    pub has_cleared: bool,
+    pub cleared_at: i64
 }
