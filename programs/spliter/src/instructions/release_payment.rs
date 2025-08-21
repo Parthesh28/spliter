@@ -26,14 +26,21 @@ pub fn release_payment(ctx: Context<ReleasePayment>) -> Result<()> {
         SplitError::InsufficientFundsForRelease
     );
 
-    let cpi_ctx = CpiContext::new(
-        ctx.accounts.system_program.to_account_info(),
-        anchor_lang::system_program::Transfer {
-            from: split.to_account_info(),
-            to: ctx.accounts.reciever.to_account_info(),
-        },
-    );
-    anchor_lang::system_program::transfer(cpi_ctx, releasable_amount)?;
+//     anchor_lang::system_program::transfer(CpiContext::new_with_signer(
+//     ctx.accounts.system_program.to_account_info(),
+//     anchor_lang::system_program::Transfer {
+//         from: split.to_account_info(),
+//         to: ctx.accounts.reciever.to_account_info(), 
+//     },
+//     &[&[
+//         b"SPLIT_SEED", 
+//         &ctx.accounts.split_authority.key().as_ref(),
+//         &[split.bump] 
+//     ]]
+// ), releasable_amount)?;
+
+**split.to_account_info().try_borrow_mut_lamports()? -= releasable_amount;
+**ctx.accounts.reciever.to_account_info().try_borrow_mut_lamports()? += releasable_amount;
 
     split.is_released = true;
     split.released_at = Clock::get()?.unix_timestamp;
