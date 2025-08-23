@@ -1,8 +1,8 @@
-use anchor_lang::prelude::*;
 use crate::errors::*;
 use crate::states::*;
+use anchor_lang::prelude::*;
 
-pub fn release_payment(ctx: Context<ReleasePayment>) -> Result<()> {
+pub fn release(ctx: Context<ReleasePayment>) -> Result<()> {
     let split = &mut ctx.accounts.split;
 
     require!(
@@ -11,7 +11,7 @@ pub fn release_payment(ctx: Context<ReleasePayment>) -> Result<()> {
     );
 
     require!(
-        split.recieved_amount >= split.split_amount,
+        split.received_amount >= split.split_amount,
         SplitError::TargetNotReached
     );
 
@@ -23,31 +23,22 @@ pub fn release_payment(ctx: Context<ReleasePayment>) -> Result<()> {
 
     require!(
         split.to_account_info().lamports() >= releasable_amount + rent_exempt_minimum,
-        SplitError::InsufficientFundsForRelease
+        SplitError::InsufficientFunds
     );
 
-//     anchor_lang::system_program::transfer(CpiContext::new_with_signer(
-//     ctx.accounts.system_program.to_account_info(),
-//     anchor_lang::system_program::Transfer {
-//         from: split.to_account_info(),
-//         to: ctx.accounts.reciever.to_account_info(), 
-//     },
-//     &[&[
-//         b"SPLIT_SEED", 
-//         &ctx.accounts.split_authority.key().as_ref(),
-//         &[split.bump] 
-//     ]]
-// ), releasable_amount)?;
-
-**split.to_account_info().try_borrow_mut_lamports()? -= releasable_amount;
-**ctx.accounts.reciever.to_account_info().try_borrow_mut_lamports()? += releasable_amount;
+    **split.to_account_info().try_borrow_mut_lamports()? -= releasable_amount;
+    **ctx
+        .accounts
+        .receiver
+        .to_account_info()
+        .try_borrow_mut_lamports()? += releasable_amount;
 
     split.is_released = true;
     split.released_at = Clock::get()?.unix_timestamp;
 
     emit!(ReleasePaymentEvent {
         split: split.key(),
-        reciever: ctx.accounts.reciever.key(),
+        receiver: ctx.accounts.receiver.key(),
         amount: releasable_amount,
         released_at: split.released_at,
     });
@@ -60,16 +51,16 @@ pub struct ReleasePayment<'info> {
     #[account(
         mut,
         has_one = split_authority @ SplitError::Unauthorized,
-        has_one = reciever @ SplitError::InvalidReceiver
+        has_one = receiver @ SplitError::InvalidReceiver
     )]
     pub split: Account<'info, Split>,
 
     #[account(mut)]
     pub split_authority: Signer<'info>,
 
-    /// CHECK: reciever account
+    /// CHECK: receiver account
     #[account(mut)]
-    pub reciever: UncheckedAccount<'info>,
+    pub receiver: UncheckedAccount<'info>,
 
     pub system_program: Program<'info, System>,
 }
@@ -77,7 +68,7 @@ pub struct ReleasePayment<'info> {
 #[event]
 pub struct ReleasePaymentEvent {
     pub split: Pubkey,
-    pub reciever: Pubkey,
+    pub receiver: Pubkey,
     pub amount: u64,
     pub released_at: i64,
 }

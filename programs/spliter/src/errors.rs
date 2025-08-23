@@ -2,36 +2,57 @@ use anchor_lang::prelude::*;
 
 #[error_code]
 pub enum SplitError {
-    #[msg("Split does not exist")]
+    #[msg("Split not found")]
     SplitNotFound,
-    #[msg("Arithmetic overflow on received amount")]
-    Overflow,
-    #[msg("Split target not yet reached")]
+
+    #[msg("Split name exceeds maximum allowed length (50 characters)")]
+    NameTooLong,
+
+    #[msg("Split name should atleast contain 1 character")]
+    InvalidName,
+
+    #[msg("Math overflow occurred")]
+    ArithmeticOverflow,
+
+    #[msg("Target amount not yet reached")]
     TargetNotReached,
-    #[msg("Bump is missing")]
-    MissingBump,
-    #[msg("Contributors do not match")]
+
+    #[msg("Missing or invalid bump")]
+    InvalidBump,
+
+    #[msg("Contributor count mismatch")]
     ContributorCountMismatch,
-    #[msg("Contributor account is invalid")]
+
+    #[msg("Invalid contributor account")]
     InvalidContributorAccount,
-    #[msg("Unauthorized: Only split authority can perform this action")]
+
+    #[msg("Contributor count should be less than 255")]
+    TooManyContributors,
+
+    #[msg("Unauthorized action")]
     Unauthorized,
+
     #[msg("Invalid receiver account")]
     InvalidReceiver,
-    #[msg("Insufficient funds in split account for release")]
-    InsufficientFundsForRelease,
-    #[msg("You need to be part of the split")]
-    NotAContributor,
-    #[msg("You have already cleared the amount")]
-    AlreadyCleared,
-    #[msg("Insufficient Funds")]
+
+    #[msg("Insufficient funds in split account")]
     InsufficientFunds,
+
+    #[msg("Caller is not a contributor")]
+    NotAContributor,
+
+    #[msg("Contribution already settled")]
+    AlreadyCleared,
+
     #[msg("Contributors list cannot be empty")]
     NoContributors,
-    #[msg("Total percentage must equal 100")]
+
+    #[msg("Total contribution percentage must equal 100")]
     InvalidTotalPercentage,
-    #[msg("Duplicate contributor found")]
+
+    #[msg("Duplicate contributor detected")]
     DuplicateContributor,
-    #[msg("Contributor percentage cannot be zero")]
+
+    #[msg("Contributor percentage must be greater than zero")]
     ZeroPercentage,
 }

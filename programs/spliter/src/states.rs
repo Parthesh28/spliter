@@ -5,13 +5,14 @@ pub const SPLIT_SEED: &str = "SPLIT_SEED";
 #[account]
 pub struct Split {
     pub split_authority: Pubkey,
-    pub reciever: Pubkey,
+    pub split_name: String,
+    pub receiver: Pubkey,
     pub split_amount: u64,
     pub contributors: Vec<Spliter>,
-    pub recieved_amount: u64,
-    pub is_released: bool,           
-    pub released_at: i64,   
-    pub bump: u8
+    pub received_amount: u64,
+    pub is_released: bool,
+    pub released_at: i64,
+    pub bump: u8,
 }
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy)]

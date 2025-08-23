@@ -12,7 +12,7 @@ spliter = "sPitpiqrhcuAgu8Ss9Bv2YEpkYhnKdDQeSYW65DSMcd"
 url = "https://api.apr.dev"
 
 [provider]
-cluster = "devnet"
+cluster = "https://devnet.helius-rpc.com/?api-key=c5d32b63-b2f3-46b9-9535-0d5510769438"
 wallet = "~/.config/solana/id.json"
 
 [scripts]

@@ -1,19 +1,26 @@
-use anchor_lang::prelude::*;
 use crate::errors::*;
 use crate::states::*;
+use anchor_lang::prelude::*;
 
 pub fn contribute(ctx: Context<Contribute>) -> Result<()> {
     let split = &mut ctx.accounts.split;
     let contributor_key = ctx.accounts.contributor.key();
 
-    let maybe_index = split.contributors.iter().position(|s| s.contributor == contributor_key);
+    let maybe_index = split
+        .contributors
+        .iter()
+        .position(|s| s.contributor == contributor_key);
     require!(maybe_index.is_some(), SplitError::NotAContributor);
 
     let index = maybe_index.unwrap();
-    
-    require!(!split.contributors[index].has_cleared, SplitError::AlreadyCleared);
 
-    let owed_amount = (split.split_amount as u128 * split.contributors[index].percent as u128 / 100) as u64;
+    require!(
+        !split.contributors[index].has_cleared,
+        SplitError::AlreadyCleared
+    );
+
+    let owed_amount =
+        (split.split_amount as u128 * split.contributors[index].percent as u128 / 100) as u64;
 
     require!(
         ctx.accounts.contributor.lamports() >= owed_amount,
@@ -28,19 +35,20 @@ pub fn contribute(ctx: Context<Contribute>) -> Result<()> {
         },
     );
     anchor_lang::system_program::transfer(cpi_context, owed_amount)?;
-    
+
     split.contributors[index].has_cleared = true;
     split.contributors[index].cleared_at = Clock::get()?.unix_timestamp;
 
-    split.recieved_amount = split.recieved_amount
+    split.received_amount = split
+        .received_amount
         .checked_add(owed_amount)
-        .ok_or(SplitError::Overflow)?;
+        .ok_or(SplitError::ArithmeticOverflow)?;
 
     emit!(ContributeEvent {
         split: split.key(),
         contributor: contributor_key,
         amount: owed_amount,
-        total_received: split.recieved_amount,
+        total_received: split.received_amount,
         has_cleared: true,
         cleared_at: split.contributors[index].cleared_at,
     });
@@ -66,5 +74,5 @@ pub struct ContributeEvent {
     pub amount: u64,
     pub total_received: u64,
     pub has_cleared: bool,
-    pub cleared_at: i64
+    pub cleared_at: i64,
 }

@@ -1,5 +1,5 @@
-use anchor_lang::prelude::*;
 use crate::instructions::*;
+use anchor_lang::prelude::*;
 
 pub mod errors;
 pub mod instructions;
@@ -11,20 +11,21 @@ declare_id!("sPitpiqrhcuAgu8Ss9Bv2YEpkYhnKdDQeSYW65DSMcd");
 pub mod spliter {
     use super::*;
 
-    pub fn create_split_x(
+    pub fn create_split(
         ctx: Context<InitializeSplit>,
-        reciever: Pubkey,
+        receiver: Pubkey,
+        name: String,
         total_amount: u64,
         contributors: Vec<states::Spliter>,
     ) -> Result<()> {
-        create_split(ctx, reciever, total_amount, contributors)
+        create(ctx, receiver, name, total_amount, contributors)
     }
 
-    pub fn contribute_x(ctx: Context<Contribute>) -> Result<()> {
+    pub fn contribute_split(ctx: Context<Contribute>) -> Result<()> {
         contribute(ctx)
     }
 
-    pub fn release_payment_x(ctx: Context<ReleasePayment>) -> Result<()> {
-        release_payment(ctx)
+    pub fn release_split(ctx: Context<ReleasePayment>) -> Result<()> {
+        release(ctx)
     }
 }

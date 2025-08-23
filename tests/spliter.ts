@@ -5,6 +5,7 @@ import { PublicKey, Keypair, SystemProgram } from "@solana/web3.js";
 import { assert } from "chai";
 
 const SPLIT_SEED = "SPLIT_SEED";
+const MAX_NAME_LEN = 50;
 
 describe("spliter", () => {
   const provider = anchor.AnchorProvider.env();
@@ -13,7 +14,8 @@ describe("spliter", () => {
   const program = anchor.workspace.Spliter as Program<Spliter>;
   const splitAuthority = provider.wallet;
   const receiver = Keypair.generate();
-  const contributor = Keypair.generate();
+  const name =  "Hello";
+
 
   it("Creates a split with valid contributors", async () => {
     const contributors = [
@@ -40,7 +42,7 @@ describe("spliter", () => {
 
 
     await program.methods
-      .createSplitX(receiver.publicKey, splitAmount, contributors)
+      .createSplit(receiver.publicKey, name, splitAmount, contributors)
       .accountsStrict({
         split: splitPda,
         splitAuthority: splitAuthority.publicKey,
@@ -50,7 +52,7 @@ describe("spliter", () => {
 
     const splitAccount = await program.account.split.fetch(splitPda);
 
-    assert.strictEqual(splitAccount.reciever.toString(), receiver.publicKey.toString());
+    assert.strictEqual(splitAccount.receiver.toString(), receiver.publicKey.toString());
     assert.strictEqual(splitAccount.splitAmount.toString(), splitAmount.toString());
     splitAccount.contributors.forEach((element, index) => {
       assert.strictEqual(element.clearedAt.toString(), contributors[index].clearedAt.toString());
@@ -85,7 +87,7 @@ describe("spliter", () => {
 
     try {
       await program.methods
-        .createSplitX(receiver.publicKey, new anchor.BN(100_000_000), badContributors)
+        .createSplit(receiver.publicKey, name, new anchor.BN(100_000_000), badContributors)
         .accountsStrict({
           split: badSplitPda,
           splitAuthority: splitAuthority.publicKey,
@@ -123,9 +125,10 @@ describe("spliter", () => {
       program.programId
     );
 
+
     try {
       await program.methods
-        .createSplitX(receiver.publicKey, new anchor.BN(100_000_000), badContributors)
+        .createSplit(receiver.publicKey, name, new anchor.BN(100_000_000), badContributors)
         .accountsStrict({
           split: badSplitPda,
           splitAuthority: splitAuthority.publicKey,
@@ -151,7 +154,7 @@ describe("spliter", () => {
 
     try {
       await program.methods
-        .createSplitX(receiver.publicKey, new anchor.BN(100_000_000), badContributors)
+        .createSplit(receiver.publicKey, name, new anchor.BN(100_000_000), badContributors)
         .accountsStrict({
           split: badSplitPda,
           splitAuthority: splitAuthority.publicKey,
@@ -190,7 +193,7 @@ describe("spliter", () => {
 
     try {
       await program.methods
-        .createSplitX(receiver.publicKey, new anchor.BN(100_000_000), badContributors)
+        .createSplit(receiver.publicKey, name, new anchor.BN(100_000_000), badContributors)
         .accountsStrict({
           split: badSplitPda,
           splitAuthority: splitAuthority.publicKey,
@@ -216,7 +219,7 @@ describe("spliter", () => {
 
     try {
       await program.methods
-        .createSplitX(receiver.publicKey, new anchor.BN(100_000_000), badContributors)
+        .createSplit(receiver.publicKey, name, new anchor.BN(100_000_000), badContributors)
         .accountsStrict({
           split: badSplitPda,
           splitAuthority: splitAuthority.publicKey,
@@ -232,7 +235,7 @@ describe("spliter", () => {
 
 
   it("Allows a valid contributor to contribute their share", async () => {
-    const splitAuthority = Keypair.generate(); 
+    const splitAuthority = Keypair.generate();
     const receiver = Keypair.generate();
     const contributor = Keypair.generate();
 
@@ -253,7 +256,7 @@ describe("spliter", () => {
         clearedAt: new anchor.BN(0),
       },
       {
-        contributor: receiver.publicKey, 
+        contributor: receiver.publicKey,
         percent: 50,
         hasCleared: false,
         clearedAt: new anchor.BN(0),
@@ -268,7 +271,7 @@ describe("spliter", () => {
     );
 
     await program.methods
-      .createSplitX(receiver.publicKey, splitAmount, contributors)
+      .createSplit(receiver.publicKey, name, splitAmount, contributors)
       .accountsStrict({
         split: splitPda,
         splitAuthority: splitAuthority.publicKey,
@@ -278,7 +281,7 @@ describe("spliter", () => {
       .rpc();
 
     await program.methods
-      .contributeX()
+      .contributeSplit()
       .accountsStrict({
         split: splitPda,
         contributor: contributor.publicKey,
@@ -289,21 +292,21 @@ describe("spliter", () => {
 
     const splitAccount = await program.account.split.fetch(splitPda);
 
-    const owedAmount = 50_000_000; 
+    const owedAmount = 50_000_000;
     const contributorEntry = splitAccount.contributors.find(
       (c) => c.contributor.toBase58() === contributor.publicKey.toBase58()
     );
 
     assert.ok(contributorEntry.hasCleared);
     assert.ok(contributorEntry.clearedAt.toNumber() > 0);
-    assert.strictEqual(splitAccount.recievedAmount.toNumber(), owedAmount);
+    assert.strictEqual(splitAccount.receivedAmount.toNumber(), owedAmount);
   });
 
   it("Does not allow a invalid contributor to contribute", async () => {
     const splitAuthority = Keypair.generate();
     const receiver = Keypair.generate();
-    const contributor = Keypair.generate(); 
-    let flag = false; 
+    const contributor = Keypair.generate();
+    let flag = false;
 
     await provider.connection.confirmTransaction(
       await provider.connection.requestAirdrop(splitAuthority.publicKey, 1_000_000_000),
@@ -322,7 +325,7 @@ describe("spliter", () => {
         clearedAt: new anchor.BN(0),
       },
       {
-        contributor: receiver.publicKey, 
+        contributor: receiver.publicKey,
         percent: 50,
         hasCleared: false,
         clearedAt: new anchor.BN(0),
@@ -337,7 +340,7 @@ describe("spliter", () => {
     );
 
     await program.methods
-      .createSplitX(receiver.publicKey, splitAmount, contributors)
+      .createSplit(receiver.publicKey, name, splitAmount, contributors)
       .accountsStrict({
         split: splitPda,
         splitAuthority: splitAuthority.publicKey,
@@ -348,7 +351,7 @@ describe("spliter", () => {
 
     try {
       await program.methods
-        .contributeX()
+        .contributeSplit()
         .accountsStrict({
           split: splitPda,
           contributor: contributor.publicKey,
@@ -364,10 +367,10 @@ describe("spliter", () => {
 
 
   it("Does not allow a contributor to contribute again", async () => {
-    const splitAuthority = Keypair.generate(); 
+    const splitAuthority = Keypair.generate();
     const receiver = Keypair.generate();
-    const contributor = Keypair.generate(); 
-    let flag = false; 
+    const contributor = Keypair.generate();
+    let flag = false;
 
     await provider.connection.confirmTransaction(
       await provider.connection.requestAirdrop(splitAuthority.publicKey, 1_000_000_000),
@@ -386,7 +389,7 @@ describe("spliter", () => {
         clearedAt: new anchor.BN(0),
       },
       {
-        contributor: receiver.publicKey, 
+        contributor: receiver.publicKey,
         percent: 50,
         hasCleared: false,
         clearedAt: new anchor.BN(0),
@@ -401,7 +404,7 @@ describe("spliter", () => {
     );
 
     await program.methods
-      .createSplitX(receiver.publicKey, splitAmount, contributors)
+      .createSplit(receiver.publicKey, name, splitAmount, contributors)
       .accountsStrict({
         split: splitPda,
         splitAuthority: splitAuthority.publicKey,
@@ -409,9 +412,9 @@ describe("spliter", () => {
       })
       .signers([splitAuthority])
       .rpc();
-    
+
     await program.methods
-      .contributeX()
+      .contributeSplit()
       .accountsStrict({
         split: splitPda,
         contributor: contributor.publicKey,
@@ -422,7 +425,7 @@ describe("spliter", () => {
 
     try {
       await program.methods
-        .contributeX()
+        .contributeSplit()
         .accountsStrict({
           split: splitPda,
           contributor: contributor.publicKey,
@@ -465,14 +468,14 @@ describe("spliter", () => {
       },
     ];
 
-    const splitAmount = new anchor.BN(100_000_000); 
+    const splitAmount = new anchor.BN(100_000_000);
     const [splitPda] = PublicKey.findProgramAddressSync(
       [Buffer.from(SPLIT_SEED), splitAuthority.publicKey.toBuffer()],
       program.programId
     );
 
     await program.methods
-      .createSplitX(receiver.publicKey, splitAmount, contributors)
+      .createSplit(receiver.publicKey, name, splitAmount, contributors)
       .accountsStrict({
         split: splitPda,
         splitAuthority: splitAuthority.publicKey,
@@ -481,35 +484,35 @@ describe("spliter", () => {
       .signers([splitAuthority])
       .rpc();
 
-      await program.methods
-        .contributeX()
-        .accountsStrict({
-          split: splitPda,
-          contributor: contributor1.publicKey,
-          systemProgram: SystemProgram.programId,
-        })
-        .signers([contributor1])
-        .rpc();
-    
-      await program.methods
-        .contributeX()
-        .accountsStrict({
-          split: splitPda,
-          contributor: contributor2.publicKey,
-          systemProgram: SystemProgram.programId,
-        })
-        .signers([contributor2])
-        .rpc();
-  
+    await program.methods
+      .contributeSplit()
+      .accountsStrict({
+        split: splitPda,
+        contributor: contributor1.publicKey,
+        systemProgram: SystemProgram.programId,
+      })
+      .signers([contributor1])
+      .rpc();
+
+    await program.methods
+      .contributeSplit()
+      .accountsStrict({
+        split: splitPda,
+        contributor: contributor2.publicKey,
+        systemProgram: SystemProgram.programId,
+      })
+      .signers([contributor2])
+      .rpc();
+
 
     const beforeBalance = await provider.connection.getBalance(receiver.publicKey);
 
     await program.methods
-      .releasePaymentX()
+      .releaseSplit()
       .accountsStrict({
         split: splitPda,
         splitAuthority: splitAuthority.publicKey,
-        reciever: receiver.publicKey,
+        receiver: receiver.publicKey,
         systemProgram: SystemProgram.programId,
       })
       .signers([splitAuthority])
@@ -548,14 +551,14 @@ describe("spliter", () => {
       },
     ];
 
-    const splitAmount = new anchor.BN(100_000_000); 
+    const splitAmount = new anchor.BN(100_000_000);
     const [splitPda] = PublicKey.findProgramAddressSync(
       [Buffer.from(SPLIT_SEED), splitAuthority.publicKey.toBuffer()],
       program.programId
     );
 
     await program.methods
-      .createSplitX(receiver.publicKey, splitAmount, contributors)
+      .createSplit(receiver.publicKey, name, splitAmount, contributors)
       .accountsStrict({
         split: splitPda,
         splitAuthority: splitAuthority.publicKey,
@@ -564,36 +567,36 @@ describe("spliter", () => {
       .signers([splitAuthority])
       .rpc();
 
-      await program.methods
-        .contributeX()
-        .accountsStrict({
-          split: splitPda,
-          contributor: contributor1.publicKey,
-          systemProgram: SystemProgram.programId,
-        })
-        .signers([contributor1])
-        .rpc();
-    
-      await program.methods
-        .contributeX()
-        .accountsStrict({
-          split: splitPda,
-          contributor: contributor2.publicKey,
-          systemProgram: SystemProgram.programId,
-        })
-        .signers([contributor2])
-        .rpc();
-  
+    await program.methods
+      .contributeSplit()
+      .accountsStrict({
+        split: splitPda,
+        contributor: contributor1.publicKey,
+        systemProgram: SystemProgram.programId,
+      })
+      .signers([contributor1])
+      .rpc();
+
+    await program.methods
+      .contributeSplit()
+      .accountsStrict({
+        split: splitPda,
+        contributor: contributor2.publicKey,
+        systemProgram: SystemProgram.programId,
+      })
+      .signers([contributor2])
+      .rpc();
+
 
     const beforeBalance = await provider.connection.getBalance(receiver.publicKey);
     let flag = false;
     try {
       await program.methods
-        .releasePaymentX()
+        .releaseSplit()
         .accountsStrict({
           split: splitPda,
           splitAuthority: splitAuthority.publicKey,
-          reciever: contributor1.publicKey,
+          receiver: contributor1.publicKey,
           systemProgram: SystemProgram.programId,
         })
         .signers([splitAuthority])
@@ -604,7 +607,7 @@ describe("spliter", () => {
 
     assert.strictEqual(true, flag);
   });
-  
+
   it("Fail if trying to release again", async () => {
     const splitAuthority = Keypair.generate();
     const receiver = Keypair.generate();
@@ -633,14 +636,14 @@ describe("spliter", () => {
       },
     ];
 
-    const splitAmount = new anchor.BN(100_000_000); 
+    const splitAmount = new anchor.BN(100_000_000);
     const [splitPda] = PublicKey.findProgramAddressSync(
       [Buffer.from(SPLIT_SEED), splitAuthority.publicKey.toBuffer()],
       program.programId
     );
 
     await program.methods
-      .createSplitX(receiver.publicKey, splitAmount, contributors)
+      .createSplit(receiver.publicKey, name, splitAmount, contributors)
       .accountsStrict({
         split: splitPda,
         splitAuthority: splitAuthority.publicKey,
@@ -649,47 +652,47 @@ describe("spliter", () => {
       .signers([splitAuthority])
       .rpc();
 
-      await program.methods
-        .contributeX()
-        .accountsStrict({
-          split: splitPda,
-          contributor: contributor1.publicKey,
-          systemProgram: SystemProgram.programId,
-        })
-        .signers([contributor1])
-        .rpc();
-    
-      await program.methods
-        .contributeX()
-        .accountsStrict({
-          split: splitPda,
-          contributor: contributor2.publicKey,
-          systemProgram: SystemProgram.programId,
-        })
-        .signers([contributor2])
-        .rpc();
-    
     await program.methods
-      .releasePaymentX()
+      .contributeSplit()
+      .accountsStrict({
+        split: splitPda,
+        contributor: contributor1.publicKey,
+        systemProgram: SystemProgram.programId,
+      })
+      .signers([contributor1])
+      .rpc();
+
+    await program.methods
+      .contributeSplit()
+      .accountsStrict({
+        split: splitPda,
+        contributor: contributor2.publicKey,
+        systemProgram: SystemProgram.programId,
+      })
+      .signers([contributor2])
+      .rpc();
+
+    await program.methods
+      .releaseSplit()
       .accountsStrict({
         split: splitPda,
         splitAuthority: splitAuthority.publicKey,
-        reciever: receiver.publicKey,
+        receiver: receiver.publicKey,
         systemProgram: SystemProgram.programId,
       })
       .signers([splitAuthority])
       .rpc();
-  
+
 
     const beforeBalance = await provider.connection.getBalance(receiver.publicKey);
     let flag = false;
     try {
       await program.methods
-        .releasePaymentX()
+        .releaseSplit()
         .accountsStrict({
           split: splitPda,
           splitAuthority: splitAuthority.publicKey,
-          reciever: receiver.publicKey,
+          receiver: receiver.publicKey,
           systemProgram: SystemProgram.programId,
         })
         .signers([splitAuthority])
