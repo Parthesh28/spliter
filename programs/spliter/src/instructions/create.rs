@@ -1,6 +1,7 @@
 use crate::errors::*;
 use crate::states::*;
 use anchor_lang::prelude::*;
+use anchor_lang::solana_program::hash::hash;
 
 pub fn create(
     ctx: Context<InitializeSplit>,
@@ -73,7 +74,7 @@ pub struct InitializeSplit<'info> {
             + (4 + (32 + 1 + 1 + 8) * contributors.len()) 
             + (4 + name.len()),                          
         payer = split_authority,
-        seeds = [SPLIT_SEED.as_bytes(), split_authority.key().as_ref()],
+        seeds = [SPLIT_SEED.as_bytes(), receiver.key().as_ref(), {hash(name.as_bytes()).to_bytes().as_ref()}],
         bump
     )]
     pub split: Account<'info, Split>,

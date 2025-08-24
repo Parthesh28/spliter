@@ -3,9 +3,9 @@ import { Program } from "@coral-xyz/anchor";
 import { Spliter } from "../target/types/spliter";
 import { PublicKey, Keypair, SystemProgram } from "@solana/web3.js";
 import { assert } from "chai";
+import crypto from 'crypto'
 
 const SPLIT_SEED = "SPLIT_SEED";
-const MAX_NAME_LEN = 50;
 
 describe("spliter", () => {
   const provider = anchor.AnchorProvider.env();
@@ -14,8 +14,10 @@ describe("spliter", () => {
   const program = anchor.workspace.Spliter as Program<Spliter>;
   const splitAuthority = provider.wallet;
   const receiver = Keypair.generate();
-  const name =  "Hello";
-
+  const name = "Hello";
+  
+  let hexString = crypto.createHash('sha256').update(name, 'utf-8').digest('hex');
+  let name_seed = Uint8Array.from(Buffer.from(hexString, 'hex'));
 
   it("Creates a split with valid contributors", async () => {
     const contributors = [
@@ -33,13 +35,11 @@ describe("spliter", () => {
       },
     ];
 
-    const [splitPda, bump] = PublicKey.findProgramAddressSync(
-      [Buffer.from(SPLIT_SEED), splitAuthority.publicKey.toBuffer()],
+    const [splitPda] = PublicKey.findProgramAddressSync(
+      [Buffer.from(SPLIT_SEED), receiver.publicKey.toBuffer(), name_seed],
       program.programId
     );
     const splitAmount = new anchor.BN(100_000_000);
-
-
 
     await program.methods
       .createSplit(receiver.publicKey, name, splitAmount, contributors)
@@ -81,7 +81,7 @@ describe("spliter", () => {
     ];
 
     const [badSplitPda] = PublicKey.findProgramAddressSync(
-      [Buffer.from(SPLIT_SEED), splitAuthority.publicKey.toBuffer()],
+      [Buffer.from(SPLIT_SEED), receiver.publicKey.toBuffer(), name_seed],
       program.programId
     );
 
@@ -121,7 +121,7 @@ describe("spliter", () => {
     ];
 
     const [badSplitPda] = PublicKey.findProgramAddressSync(
-      [Buffer.from(SPLIT_SEED), splitAuthority.publicKey.toBuffer()],
+      [Buffer.from(SPLIT_SEED), receiver.publicKey.toBuffer(), name_seed],
       program.programId
     );
 
@@ -148,7 +148,7 @@ describe("spliter", () => {
     const badContributors = [];
 
     const [badSplitPda] = PublicKey.findProgramAddressSync(
-      [Buffer.from(SPLIT_SEED), splitAuthority.publicKey.toBuffer()],
+      [Buffer.from(SPLIT_SEED), receiver.publicKey.toBuffer(), name_seed],
       program.programId
     );
 
@@ -187,7 +187,7 @@ describe("spliter", () => {
     ];
 
     const [badSplitPda] = PublicKey.findProgramAddressSync(
-      [Buffer.from(SPLIT_SEED), splitAuthority.publicKey.toBuffer()],
+      [Buffer.from(SPLIT_SEED), receiver.publicKey.toBuffer(), name_seed],
       program.programId
     );
 
@@ -213,7 +213,7 @@ describe("spliter", () => {
     const badContributors = [];
 
     const [badSplitPda] = PublicKey.findProgramAddressSync(
-      [Buffer.from(SPLIT_SEED), splitAuthority.publicKey.toBuffer()],
+      [Buffer.from(SPLIT_SEED), receiver.publicKey.toBuffer(), name_seed],
       program.programId
     );
 
@@ -266,7 +266,7 @@ describe("spliter", () => {
     const splitAmount = new anchor.BN(100_000_000);
 
     const [splitPda] = PublicKey.findProgramAddressSync(
-      [Buffer.from(SPLIT_SEED), splitAuthority.publicKey.toBuffer()],
+      [Buffer.from(SPLIT_SEED), receiver.publicKey.toBuffer(), name_seed],
       program.programId
     );
 
@@ -335,7 +335,7 @@ describe("spliter", () => {
     const splitAmount = new anchor.BN(100_000_000);
 
     const [splitPda] = PublicKey.findProgramAddressSync(
-      [Buffer.from(SPLIT_SEED), splitAuthority.publicKey.toBuffer()],
+      [Buffer.from(SPLIT_SEED), receiver.publicKey.toBuffer(), name_seed],
       program.programId
     );
 
@@ -399,7 +399,7 @@ describe("spliter", () => {
     const splitAmount = new anchor.BN(100_000_000);
 
     const [splitPda] = PublicKey.findProgramAddressSync(
-      [Buffer.from(SPLIT_SEED), splitAuthority.publicKey.toBuffer()],
+      [Buffer.from(SPLIT_SEED), receiver.publicKey.toBuffer(), name_seed],
       program.programId
     );
 
@@ -470,7 +470,7 @@ describe("spliter", () => {
 
     const splitAmount = new anchor.BN(100_000_000);
     const [splitPda] = PublicKey.findProgramAddressSync(
-      [Buffer.from(SPLIT_SEED), splitAuthority.publicKey.toBuffer()],
+      [Buffer.from(SPLIT_SEED), receiver.publicKey.toBuffer(), name_seed],
       program.programId
     );
 
@@ -553,7 +553,7 @@ describe("spliter", () => {
 
     const splitAmount = new anchor.BN(100_000_000);
     const [splitPda] = PublicKey.findProgramAddressSync(
-      [Buffer.from(SPLIT_SEED), splitAuthority.publicKey.toBuffer()],
+      [Buffer.from(SPLIT_SEED), receiver.publicKey.toBuffer(), name_seed],
       program.programId
     );
 
@@ -638,7 +638,7 @@ describe("spliter", () => {
 
     const splitAmount = new anchor.BN(100_000_000);
     const [splitPda] = PublicKey.findProgramAddressSync(
-      [Buffer.from(SPLIT_SEED), splitAuthority.publicKey.toBuffer()],
+      [Buffer.from(SPLIT_SEED), receiver.publicKey.toBuffer(), name_seed],
       program.programId
     );
 
