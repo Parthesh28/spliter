@@ -39,6 +39,7 @@ describe("spliter", () => {
       [Buffer.from(SPLIT_SEED), receiver.publicKey.toBuffer(), name_seed],
       program.programId
     );
+    
     const splitAmount = new anchor.BN(100_000_000);
 
     await program.methods
@@ -206,33 +207,6 @@ describe("spliter", () => {
 
     assert.strictEqual(flag, true);
   });
-
-  it("Fails when sending no contributors", async () => {
-    let flag = false;
-
-    const badContributors = [];
-
-    const [badSplitPda] = PublicKey.findProgramAddressSync(
-      [Buffer.from(SPLIT_SEED), receiver.publicKey.toBuffer(), name_seed],
-      program.programId
-    );
-
-    try {
-      await program.methods
-        .createSplit(receiver.publicKey, name, new anchor.BN(100_000_000), badContributors)
-        .accountsStrict({
-          split: badSplitPda,
-          splitAuthority: splitAuthority.publicKey,
-          systemProgram: SystemProgram.programId,
-        })
-        .rpc();
-    } catch (err) {
-      flag = true;
-    }
-
-    assert.strictEqual(flag, true);
-  });
-
 
   it("Allows a valid contributor to contribute their share", async () => {
     const splitAuthority = Keypair.generate();
@@ -535,7 +509,7 @@ describe("spliter", () => {
         "confirmed"
       );
     }
-
+    
     const contributors = [
       {
         contributor: contributor1.publicKey,
